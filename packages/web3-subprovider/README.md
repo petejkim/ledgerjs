@@ -1,8 +1,8 @@
 <img src="https://user-images.githubusercontent.com/211411/34776833-6f1ef4da-f618-11e7-8b13-f0697901d6a8.png" height="100" />
 
-## @ledgerhq/web3-subprovider
+## @petejkim/ledger-web3-subprovider
 
-Library for Ledger Hardware Wallets.
+A web3 subprovider for Ledger hardware wallets, with support for arbitrary chain IDs.
 
 [Github](https://github.com/LedgerHQ/ledgerjs/),
 [Ledger Devs Slack](https://ledger-dev.slack.com/)
@@ -42,18 +42,22 @@ Create a HookedWalletSubprovider for Ledger devices.
 
 ```javascript
 import Web3 from "web3";
-import createLedgerSubprovider from "@ledgerhq/web3-subprovider";
+import createLedgerSubprovider from "@petejkim/ledger-web3-subprovider";
 import TransportU2F from "@ledgerhq/hw-transport-u2f";
 import ProviderEngine from "web3-provider-engine";
 import RpcSubprovider from "web3-provider-engine/subproviders/rpc";
+
 const engine = new ProviderEngine();
 const getTransport = () => TransportU2F.create();
 const ledger = createLedgerSubprovider(getTransport, {
-accountsLength: 5
+  accountsLength: 5,
+  networkId: 1 // supports arbitrary chain IDs
 });
+
 engine.addProvider(ledger);
 engine.addProvider(new RpcSubprovider({ rpcUrl }));
 engine.start();
+
 const web3 = new Web3(engine);
 ```
 

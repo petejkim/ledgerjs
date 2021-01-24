@@ -1,7 +1,7 @@
 {
-  "name": "@ledgerhq/web3-subprovider",
+  "name": "@petejkim/ledger-web3-subprovider",
   "version": "5.35.1",
-  "description": "Ledger Hardware Wallet Ethereum Web3 subprovider",
+  "description": "Ledger Web3 subprovider with support for arbitrary chain IDs",
   "keywords": [
     "Ledger",
     "LedgerWallet",
@@ -16,12 +16,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/LedgerHQ/ledgerjs"
+    "url": "https://github.com/petejkim/ledgerjs"
   },
   "bugs": {
-    "url": "https://github.com/LedgerHQ/ledgerjs/issues"
+    "url": "https://github.com/petejkim/ledgerjs/issues"
   },
-  "homepage": "https://github.com/LedgerHQ/ledgerjs",
+  "homepage": "https://github.com/petejkim/ledgerjs",
   "publishConfig": {
     "access": "public"
   },

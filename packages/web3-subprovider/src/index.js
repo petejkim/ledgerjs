@@ -2,8 +2,9 @@
 import AppEth from "@ledgerhq/hw-app-eth";
 import type Transport from "@ledgerhq/hw-transport";
 import HookedWalletSubprovider from "web3-provider-engine/subproviders/hooked-wallet";
-import stripHexPrefix from "strip-hex-prefix";
-import { Transaction as EthereumTx } from "ethereumjs-tx";
+import { Transaction } from "cipher-ethereum";
+import BN from "bn.js";
+import * as rlp from 'rlp'
 
 function makeError(msg, id) {
   const err = new Error(msg);
@@ -101,7 +102,7 @@ export default function createLedgerSubprovider(
       const eth = new AppEth(transport);
       const result = await eth.signPersonalMessage(
         path,
-        stripHexPrefix(msgData.data)
+        strip0x(msgData.data)
       );
       const v = parseInt(result.v, 10) - 27;
       let vHex = v.toString(16);
@@ -120,28 +121,31 @@ export default function createLedgerSubprovider(
     const transport = await getTransport();
     try {
       const eth = new AppEth(transport);
-      const tx = new EthereumTx(txData, { chain: networkId });
 
-      // Set the EIP155 bits
-      tx.raw[6] = Buffer.from([networkId]); // v
-      tx.raw[7] = Buffer.from([]); // r
-      tx.raw[8] = Buffer.from([]); // s
+      const tx = new Transaction({
+        toAddress: txData.to || null,
+        valueWei: hexToBN(txData.value) || new BN(0),
+        gasPriceWei: hexToBN(txData.gasPrice) || new BN(0),
+        gasLimit: hexToBN(txData.gas) || new BN(21000),
+        data: txData.data || null,
+        nonce: Number.parseInt(txData.nonce, 16) || 0,
+        chainId: networkId
+      });
 
       // Pass hex-rlp to ledger for signing
       const result = await eth.signTransaction(
         path,
-        tx.serialize().toString("hex")
+        rlp.encode(tx.fieldsForSigning).toString("hex")
       );
 
       // Store signature in transaction
-      tx.v = Buffer.from(result.v, "hex");
+      tx.v = Number.parseInt(result.v, 16);
       tx.r = Buffer.from(result.r, "hex");
       tx.s = Buffer.from(result.s, "hex");
 
       // EIP155: v should be chain_id * 2 + {35, 36}
-      const signedChainId = Math.floor((tx.v[0] - 35) / 2);
-      const validChainId = networkId & 0xff; // FIXME this is to fixed a current workaround that app don't support > 0xff
-      if (signedChainId !== validChainId) {
+      const signedChainId = Math.floor((tx.v - 35) / 2);
+      if (signedChainId !== networkId) {
         throw makeError(
           "Invalid networkId signature returned. Expected: " +
             networkId +
@@ -151,7 +155,7 @@ export default function createLedgerSubprovider(
         );
       }
 
-      return `0x${tx.serialize().toString("hex")}`;
+      return `0x${tx.rlp.toString("hex")}`;
     } finally {
       transport.close();
     }
@@ -176,4 +180,15 @@ export default function createLedgerSubprovider(
   });
 
   return subprovider;
+}
+
+function hexToBN(hex) {
+  return hex ? new BN(strip0x(hex), 16) : null;
+}
+
+function strip0x(str) {
+  if (typeof str !== "string") {
+    throw new TypeError();
+  }
+  return str.startsWith("0x") ? str.slice(2) : str;
 }
